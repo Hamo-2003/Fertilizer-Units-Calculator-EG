@@ -1,109 +1,98 @@
 <!DOCTYPE html><html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>حاسبة وحدات الأسمدة</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أداة حساب وحدات السماد</title>
 <style>
-  body {
-    font-family: 'Cairo', sans-serif;
-    margin: 0;
-    padding: 20px;
-    background: #f0f4f8;
-  }
-  h1 {
-    text-align: center;
-    color: #0a4f70;
-  }
-  .card {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  label {
-    font-weight: bold;
-  }
-  select, input {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0 20px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    background: #0a4f70;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 18px;
-    cursor: pointer;
-  }
-  .result {
-    margin-top: 20px;
-    font-size: 20px;
-    background: #e8f7ff;
-    padding: 15px;
-    border-radius: 10px;
-    line-height: 1.8;
-  }
+  body { font-family: 'Cairo', sans-serif; background: #f7f7f7; margin: 20px; }
+  header, footer { text-align: center; padding: 10px; font-weight: bold; color: #ff6600; }
+  .lang-switch { position: absolute; top: 10px; left: 10px; }
+  .container { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 0 10px #ccc; }
+  button { padding: 10px 15px; margin: 5px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+  .export { background: #007bff; color: white; }
+  .print { background: #28a745; color: white; }
 </style>
 </head>
-<body>
-<h1>حاسبة وحدات الأسمدة</h1><div class="card">
-  <label>اختر نوع السماد:</label>
-  <select id="fertilizer">
-    <option value="46-0-0">يوريا — 46% N</option>
-    <option value="33.5-0-0">نترات نشادر — 33.5% N</option>
-    <option value="21-0-0">سلفات نشادر — 21% N</option>
-    <option value="15.5-0-0">نترات كالسيوم — 15.5% N</option>
-    <option value="18-46-0">DAP — 18% N + 46% P₂O₅</option>
-    <option value="12-61-0">MAP — 12% N + 61% P₂O₅</option>
-    <option value="0-15-0">سوبر فوسفات — 15% P₂O₅</option>
-    <option value="0-52-34">MKP — 52% P₂O₅ + 34% K₂O</option>
-    <option value="0-0-50">سلفات بوتاسيوم — 50% K₂O</option>
-    <option value="0-0-60">كلوريد بوتاسيوم — 60% K₂O</option>
-    <option value="15-15-15">NPK 15-15-15</option>
-    <option value="20-20-20">NPK 20-20-20</option>
-    <option value="12-24-12">NPK 12-24-12</option>
-  </select><label>ادخل كمية السماد (كجم):</label> <input type="number" id="amount" placeholder="مثال: 100" />
+<body><div class="lang-switch">
+  <select id="language" onchange="switchLanguage()">
+    <option value="ar">العربية</option>
+    <option value="en">English</option>
+  </select>
+</div><header>⚡ تصميم م. محمد صبحي ⚡</header><div class="container">
+  <h2 id="title">حاسبة وحدات العناصر من الأسمدة</h2><label id="fertLabel">اختر السماد:</label> <select id="fertilizer"></select>
 
-<button onclick="calculateUnits()">احسب الوحدات</button>
+<br><br> <label id="unitLabel">أدخل عدد الوحدات المطلوبة:</label> <input type="number" id="units" />
 
-  <div class="result" id="result" style="display:none"></div>
-</div><script>
-function calculateUnits() {
-  let fert = document.getElementById('fertilizer').value.split('-');
-  let N = parseFloat(fert[0]);
-  let P2O5 = parseFloat(fert[1]);
-  let K2O = parseFloat(fert[2]);
-  let amount = parseFloat(document.getElementById('amount').value);
+<button onclick="calculate()">حساب</button>
 
-  if (!amount) return alert('ادخل كمية السماد');
+  <h3 id="result"></h3><button class="export" onclick="downloadCSV()">تصدير CSV</button> <button class="export" onclick="downloadExcel()">تصدير Excel</button> <button class="print" onclick="window.print()">طباعة</button>
 
-  // حساب الوحدات
-  let N_units = amount * (N / 100);
-  let P2O5_units = amount * (P2O5 / 100);
-  let K2O_units = amount * (K2O / 100);
+</div><footer>⚡ Created by ENG. Mohamed Sobhy ⚡</footer><script>
+const fertilizers = {
+  "Urea 46% N": { N: 46 },
+  "Ammonium Nitrate 33.5%": { N: 33.5 },
+  "MAP 12-61-0": { N: 12, P: 61 },
+  "DAP 18-46-0": { N: 18, P: 46 },
+  "MKP 0-52-34": { P: 52, K: 34 },
+  "NPK 20-20-20": { N: 20, P: 20, K: 20 }
+};
 
-  // التحويلات
-  let P_units = P2O5_units * 0.436;
-  let K_units = K2O_units * 0.83;
-
-  let result = document.getElementById('result');
-  result.style.display = 'block';
-
-  result.innerHTML = `
-    <strong>نتيجة الحساب:</strong><br>
-    وحدات النيتروجين (N): <strong>${N_units.toFixed(2)}</strong><br>
-    وحدات الفوسفور (P₂O₅): <strong>${P2O5_units.toFixed(2)}</strong><br>
-    مكافئ الفوسفور (P): <strong>${P_units.toFixed(2)}</strong><br>
-    وحدات البوتاسيوم (K₂O): <strong>${K2O_units.toFixed(2)}</strong><br>
-    مكافئ البوتاسيوم (K): <strong>${K_units.toFixed(2)}</strong><br>
-  `;
+function loadFertilizers() {
+  const select = document.getElementById("fertilizer");
+  for (let f in fertilizers) {
+    const option = document.createElement("option");
+    option.value = f;
+    option.textContent = f;
+    select.appendChild(option);
+  }
 }
+
+function calculate() {
+  const fert = document.getElementById("fertilizer").value;
+  const units = document.getElementById("units").value;
+
+  const percent = Object.values(fertilizers[fert])[0];
+  const kg = (units / (percent / 100)).toFixed(2);
+
+  document.getElementById("result").textContent = `تحتاج إلى ${kg} كجم من سماد ${fert}`;
+}
+
+function downloadCSV() {
+  let data = document.getElementById("result").textContent;
+  let blob = new Blob([data], { type: 'text/csv' });
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = 'fertilizer_result.csv';
+  a.click();
+}
+
+function downloadExcel() {
+  let data = document.getElementById("result").textContent;
+  let blob = new Blob([data], { type: 'application/vnd.ms-excel' });
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = 'fertilizer_result.xls';
+  a.click();
+}
+
+function switchLanguage() {
+  const lang = document.getElementById("language").value;
+
+  if (lang === "en") {
+    document.body.dir = "ltr";
+    document.getElementById("title").textContent = "Fertilizer Nutrient Unit Calculator";
+    document.getElementById("fertLabel").textContent = "Select fertilizer:";
+    document.getElementById("unitLabel").textContent = "Enter required units:";
+  } else {
+    document.body.dir = "rtl";
+    document.getElementById("title").textContent = "حاسبة وحدات العناصر من الأسمدة";
+    document.getElementById("fertLabel").textContent = "اختر السماد:";
+    document.getElementById("unitLabel").textContent = "أدخل عدد الوحدات المطلوبة:";
+  }
+}
+
+loadFertilizers();
 </script></body>
 </html>
